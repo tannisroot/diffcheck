@@ -23,6 +23,76 @@
   const restoreYes = $('restore-yes');
   const restoreNo = $('restore-no');
 
+  // ---- Line-number gutters --------------------------------------------
+  // Numbers are per logical line. When a long line wraps in the textarea, extra blank
+  // rows are added after its number so every number stays level with its text.
+  const NON_PLAIN = /[^\x20-\x7e]/; // tabs, control and non-ASCII chars can change widths
+  const mirror = document.createElement('div');
+  mirror.className = 'mirror';
+  const probe = document.createElement('div');
+  probe.className = 'mirror probe';
+  document.body.append(mirror, probe);
+
+  function linkGutter(ta, gutter) {
+    let prev = '';
+    let digits = 0;
+
+    const update = () => {
+      const lines = ta.value.split('\n');
+      const n = lines.length;
+      const cs = getComputedStyle(ta);
+      const lh = parseFloat(cs.lineHeight) || 19.5;
+      const width = ta.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+
+      probe.textContent = '0'.repeat(100);
+      const charW = probe.getBoundingClientRect().width / 100;
+      const perRow = charW > 0 ? Math.max(1, Math.floor(width / charW)) : Infinity;
+
+      // Only lines that might wrap need measuring; the rest are exactly one row.
+      const cand = [];
+      for (let i = 0; i < n; i++) {
+        if (lines[i].length > perRow || NON_PLAIN.test(lines[i])) cand.push(i);
+      }
+      const rows = new Map();
+      if (cand.length && width > 0) {
+        mirror.style.width = `${width}px`;
+        const frag = document.createDocumentFragment();
+        for (const i of cand) {
+          const d = document.createElement('div');
+          d.textContent = lines[i];
+          frag.appendChild(d);
+        }
+        mirror.replaceChildren(frag);
+        const kids = mirror.children;
+        for (let k = 0; k < cand.length; k++) {
+          rows.set(cand[k], Math.max(1, Math.round(kids[k].offsetHeight / lh)));
+        }
+        mirror.replaceChildren();
+      }
+
+      const parts = new Array(n);
+      for (let i = 0; i < n; i++) {
+        const r = rows.get(i) || 1;
+        parts[i] = r === 1 ? String(i + 1) : `${i + 1}${'\n'.repeat(r - 1)}`;
+      }
+      const text = parts.join('\n');
+      if (text !== prev) { prev = text; gutter.textContent = text; }
+
+      const d = Math.max(2, String(n).length);
+      if (d !== digits) { digits = d; gutter.style.width = `calc(${d}ch + 1rem)`; }
+      gutter.scrollTop = ta.scrollTop;
+    };
+
+    ta.addEventListener('input', update);
+    ta.addEventListener('scroll', () => { gutter.scrollTop = ta.scrollTop; });
+    if (typeof ResizeObserver === 'function') new ResizeObserver(update).observe(ta);
+    update();
+    return update;
+  }
+  const updateOriginalGutter = linkGutter(originalEl, $('original-gutter'));
+  const updateChangedGutter = linkGutter(changedEl, $('changed-gutter'));
+  const updateGutters = () => { updateOriginalGutter(); updateChangedGutter(); };
+
   // ---- Theme ---------------------------------------------------------
   const paintThemeBtn = () => {
     const dark = root.dataset.theme === 'dark';
@@ -258,6 +328,7 @@
     clearTimeout(saveTimer);
     originalEl.value = '';
     changedEl.value = '';
+    updateGutters();
     summaryEl.replaceChildren();
     diffEl.replaceChildren();
     showResult(false);
@@ -274,6 +345,7 @@
     restoreYes.addEventListener('click', () => {
       originalEl.value = saved.a;
       changedEl.value = saved.b;
+      updateGutters();
       restoreEl.hidden = true;
       if (saved.d) run();
       saveSession();

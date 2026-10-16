@@ -52,7 +52,7 @@ body {
   font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .topbar {
   flex: none;
@@ -207,25 +207,71 @@ body {
 
 .editor label { margin-bottom: 0.25rem; font-weight: 600; }
 
-textarea {
+.field {
   flex: 1;
   min-height: 0;
-  padding: 0.6rem 0.75rem;
-  resize: none;
-  color: var(--fg);
+  display: flex;
+  overflow: hidden;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
+  padding: 1px;
+}
+
+/* Focus indicator: a real 2px border (borders snap to whole device pixels, so all four
+   sides match). The 1px padding in the resting state is swapped for the extra border pixel,
+   so the field's content never moves. The transparent outline only shows in forced-colors mode. */
+.field:focus-within {
+  padding: 0;
+  border-width: 1.5px;
+  border-color: #12a594;
+  outline: 1px solid transparent;
+}
+
+/* Line numbers: no separator line. Scroll position is synced from the textarea in app.js;
+   wrapped lines get blank gutter rows so numbers stay aligned with their text. */
+.gutter {
+  flex: none;
+  overflow: hidden;
+  padding: 0.6rem 0.75rem 0.6rem 0.25rem;
+  text-align: right;
+  white-space: pre;
+  color: var(--muted);
+  font: 13px/1.5 var(--mono);
+  user-select: none;
+}
+
+/* Hidden elements used only to measure how many rows each line wraps to. */
+.mirror {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   font: 13px/1.5 var(--mono);
   tab-size: 4;
 }
 
-/* Focus indicator is the field's own 1px border turning blue, so all four sides are
-   drawn identically. The transparent outline only shows in forced-colors mode. */
-textarea:focus-visible {
-  border-color: var(--focus);
-  outline: 1px solid transparent;
-  outline-offset: 0;
+.mirror.probe { white-space: pre; }
+
+textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.6rem 0.75rem;
+  resize: none;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  font: 13px/1.5 var(--mono);
+  tab-size: 4;
 }
 
 .actions {

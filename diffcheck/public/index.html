@@ -32,16 +32,22 @@
     <section class="editors">
       <div class="editor">
         <label for="original">Original text</label>
-        <textarea id="original" maxlength="1000000" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the original text here"></textarea>
+        <div class="field">
+          <div class="gutter" id="original-gutter" aria-hidden="true"></div>
+          <textarea id="original" maxlength="1000000" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the original text here"></textarea>
+        </div>
       </div>
       <div class="editor">
         <label for="changed">Changed text</label>
-        <textarea id="changed" maxlength="1000000" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the changed text here"></textarea>
+        <div class="field">
+          <div class="gutter" id="changed-gutter" aria-hidden="true"></div>
+          <textarea id="changed" maxlength="1000000" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the changed text here"></textarea>
+        </div>
       </div>
     </section>
 
     <footer class="actions">
-      <button id="find" class="btn primary" type="button">Find difference</button>
+      <button id="find" class="btn primary" type="button">Find Difference</button>
     </footer>
   </main>
 

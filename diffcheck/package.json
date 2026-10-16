@@ -1,0 +1,17 @@
+{
+  "name": "diffcheck",
+  "version": "1.0.0",
+  "description": "Simple client-side text diff checker",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "diff": "9.0.0"
+  }
+}

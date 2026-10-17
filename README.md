@@ -4,15 +4,7 @@ the server only serves five static files and the `diff` (jsdiff) browser bundle.
 
 ![Example screenshot](screenshot.png)
 
-## Run
-
-    npm install      # commit the generated package-lock.json, then use `npm ci` in deployments
-    npm start        # http://127.0.0.1:3000
-
-Environment: `HOST` (default `127.0.0.1`; use `0.0.0.0` in containers), `PORT` (default `3000`).
-Shortcut: Ctrl/Cmd+Enter in either field runs the comparison.
-
-## Docker
+## Deploy with Docker
 
 ``` sh
 docker run -p 127.0.0.1:10300:10300 tannisroot/diffcheck:latest

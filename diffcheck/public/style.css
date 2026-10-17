@@ -240,8 +240,10 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   top: 0;
   right: 0;
   bottom: 0;
-  width: 1px;
-  background: var(--border);
+  width: 0;
+  /* A border, not a 1px-wide background: browsers snap borders to whole device pixels, like
+     the header's line, so on zoomed or fractional-DPR screens it can't render 2px thick. */
+  border-left: 1px solid var(--border);
 }
 /* 8px spacer row + 7px = the line starts 15px below the header line. */
 .diff tbody tr:first-child td.num::after { top: 7px; }

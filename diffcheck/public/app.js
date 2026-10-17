@@ -234,11 +234,18 @@
       headCell(stat('add', 'plus', adds, 'addition', 'additions'), rightLines),
       el('th', 'gap'),
     );
-    table.appendChild(el('thead')).appendChild(head);
+    const padRow = el('tr', 'pad'); // 8px of space between the header line and the first row
+    const padCell = el('td');
+    padCell.colSpan = 7;
+    padRow.appendChild(padCell);
+    const thead = el('thead');
+    thead.append(head, padRow);
+    table.appendChild(thead);
 
     const body = el('tbody');
     const frag = document.createDocumentFragment();
     const kindOf = (side) => (side ? side.k || '' : 'empty');
+    const isChanged = (row) => Boolean(kindOf(row.l) || kindOf(row.r));
     rows.forEach((row, i) => {
       const prev = rows[i - 1];
       const next = rows[i + 1];
@@ -251,6 +258,10 @@
         if (kind) { // first/last row of a highlighted run gets the rounded corners
           if (!prev || kindOf(prev[key]) !== kind) for (const td of cells) td.classList.add('r-top');
           if (!next || kindOf(next[key]) !== kind) for (const td of cells) td.classList.add('r-bot');
+        }
+        if (!isChanged(row)) { // regular row next to a changed run: add the outside gap
+          if (next && isChanged(next)) for (const td of cells) td.classList.add('sp-b');
+          if (prev && isChanged(prev)) for (const td of cells) td.classList.add('sp-t');
         }
         tr.append(...cells);
         tr.appendChild(el('td', 'gap'));

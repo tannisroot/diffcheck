@@ -214,13 +214,15 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .th-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .th-inner .lines { font-weight: 400; color: var(--muted); white-space: nowrap; }
 
-.diff td { vertical-align: top; padding: 0.2rem 0.5rem; }
+/* Tight lines: almost no vertical padding, so the pitch is just the 19.5px line height. */
+.diff td { vertical-align: top; padding: 0.25px 0.5rem; }
 .diff td.gap { padding: 0; }
 
-/* Lines inside a highlighted run are spaced like regular lines; the extra room sits only
-   at the run's top and bottom, i.e. between regular lines and highlighted ones. */
-.diff td.r-top { padding-top: 0.35rem; }
-.diff td.r-bot { padding-bottom: 0.35rem; }
+/* Highlight bands hug their lines. The breathing room (8px) sits outside them: on the
+   regular rows next to a changed run (sp-t / sp-b), and in a spacer row under the header. */
+.diff td.sp-t { padding-top: 8px; }
+.diff td.sp-b { padding-bottom: 8px; }
+.diff tr.pad td { height: 8px; padding: 0; }
 
 .diff td.num {
   position: relative;
@@ -241,7 +243,8 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   width: 1px;
   background: var(--border);
 }
-.diff tbody tr:first-child td.num::after { top: 15px; }
+/* 8px spacer row + 7px = the line starts 15px below the header line. */
+.diff tbody tr:first-child td.num::after { top: 7px; }
 
 .diff td.num + td.code { padding-left: 0.6rem; }
 
@@ -281,7 +284,7 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
    editable fields sit below it, so they are only reached by scrolling down. */
 .has-result #app { flex: 1 0 auto; }
 .has-result .result { flex: none; display: block; margin: 0.75rem 1rem; }
-.has-result .diff-scroll { overflow: visible; }
+.has-result .diff-scroll { overflow: visible; padding-bottom: 8px; }
 
 /* After a diff: each editable field is capped at 260px tall and scrolls on its own
    (textarea + line numbers) when the text is longer. */

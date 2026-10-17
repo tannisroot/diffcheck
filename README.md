@@ -2,6 +2,8 @@
 Simple self-hostable text diff checker. The comparison runs entirely in the browser;
 the server only serves five static files and the `diff` (jsdiff) browser bundle.
 
+![Example screenshot](screenshot.png)
+
 ## Run
 
     npm install      # commit the generated package-lock.json, then use `npm ci` in deployments

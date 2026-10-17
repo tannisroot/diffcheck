@@ -15,8 +15,12 @@
   const changedEl = $('changed');
   const findBtn = $('find');
   const resultEl = $('result');
-  const summaryEl = $('summary');
   const diffEl = $('diff');
+  const diffIsland = $('diff-island');
+  const noticeEl = $('notice');
+  const noticeIcon = $('notice-icon');
+  const noticeTitle = $('notice-title');
+  const noticeText = $('notice-text');
   const themeBtn = $('theme-toggle');
   const resetBtn = $('reset');
   const restoreEl = $('restore');
@@ -79,7 +83,7 @@
       if (text !== prev) { prev = text; gutter.textContent = text; }
 
       const d = Math.max(2, String(n).length);
-      if (d !== digits) { digits = d; gutter.style.width = `calc(${d}ch + 1rem)`; }
+      if (d !== digits) { digits = d; gutter.style.width = `calc(${d}ch + 14px)`; }
       gutter.scrollTop = ta.scrollTop;
     };
 
@@ -164,7 +168,7 @@
         for (const t of p.value) rows.push({ l: null, r: { n: rn++, t, k: 'add' } });
       }
     }
-    return { rows, adds, dels };
+    return { rows, adds, dels, leftLines: ln - 1, rightLines: rn - 1 };
   }
 
   // ---- Rendering (DOM APIs + textContent only; never innerHTML) ------
@@ -198,39 +202,121 @@
     return td;
   }
 
-  function renderTable(rows) {
+  function renderTable(rows, adds, dels, leftLines, rightLines) {
     const table = el('table', 'diff');
 
     const cols = el('colgroup');
-    for (const w of ['4rem', 'auto', '4rem', 'auto']) {
+    // Number columns are sized to the widest line number: 17px left padding + digits + 0.6rem.
+    const digits = Math.max(2, String(Math.max(leftLines, rightLines)).length);
+    const numW = `calc(${digits}ch + 17px + 0.6rem)`;
+    for (const w of ['8px', numW, 'auto', '40px', numW, 'auto', '8px']) {
       const c = document.createElement('col');
       c.style.width = w;
       cols.appendChild(c);
     }
     table.appendChild(cols);
 
-    const head = el('tr');
-    for (const label of ['Original', 'Changed']) {
-      const th = el('th', '', label);
+    // Header: each side's counter on the left and its line count on the right, above that side.
+    const plural = (n, one, many) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+    const headCell = (statEl, lineCount) => {
+      const th = el('th');
       th.colSpan = 2;
-      head.appendChild(th);
-    }
+      const inner = el('div', 'th-inner');
+      inner.append(statEl, el('span', 'lines', plural(lineCount, 'line', 'lines')));
+      th.appendChild(inner);
+      return th;
+    };
+    const head = el('tr');
+    head.append(
+      el('th', 'gap'),
+      headCell(stat('del', 'minus', dels, 'removal', 'removals'), leftLines),
+      el('th', 'gap'),
+      headCell(stat('add', 'plus', adds, 'addition', 'additions'), rightLines),
+      el('th', 'gap'),
+    );
     table.appendChild(el('thead')).appendChild(head);
 
     const body = el('tbody');
     const frag = document.createDocumentFragment();
-    for (const { l, r } of rows) {
+    const kindOf = (side) => (side ? side.k || '' : 'empty');
+    rows.forEach((row, i) => {
+      const prev = rows[i - 1];
+      const next = rows[i + 1];
       const tr = el('tr');
-      tr.append(numCell(l), codeCell(l), numCell(r), codeCell(r));
+      tr.appendChild(el('td', 'gap'));
+      for (const key of ['l', 'r']) {
+        const side = row[key];
+        const kind = kindOf(side);
+        const cells = [numCell(side), codeCell(side)];
+        if (kind) { // first/last row of a highlighted run gets the rounded corners
+          if (!prev || kindOf(prev[key]) !== kind) for (const td of cells) td.classList.add('r-top');
+          if (!next || kindOf(next[key]) !== kind) for (const td of cells) td.classList.add('r-bot');
+        }
+        tr.append(...cells);
+        tr.appendChild(el('td', 'gap'));
+      }
       frag.appendChild(tr);
-    }
+    });
     body.appendChild(frag);
     table.appendChild(body);
     return table;
   }
 
-  function showSummary(nodes) {
-    summaryEl.replaceChildren(...nodes);
+  // Icons are built with the DOM API (no innerHTML), as the CSP and Trusted Types require.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const ICONS = {
+    minus: [['circle', { cx: 12, cy: 12, r: 10 }], ['path', { d: 'M8 12h8' }]],
+    plus: [['circle', { cx: 12, cy: 12, r: 10 }], ['path', { d: 'M8 12h8M12 8v8' }]],
+    info: [
+      ['circle', { cx: 12, cy: 12, r: 11.5, fill: 'currentColor', stroke: 'none' }],
+      ['path', { d: 'M12 11v5.5', class: 'glyph' }],
+      ['circle', { cx: 12, cy: 7.6, r: 1.4, class: 'glyph-dot' }],
+    ],
+    alert: [
+      ['circle', { cx: 12, cy: 12, r: 11.5, fill: 'currentColor', stroke: 'none' }],
+      ['path', { d: 'M12 7v5.5', class: 'glyph' }],
+      ['circle', { cx: 12, cy: 16.4, r: 1.4, class: 'glyph-dot' }],
+    ],
+  };
+
+  function svgIcon(name, size) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    const attrs = {
+      viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor',
+      'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true',
+    };
+    for (const [k, v] of Object.entries(attrs)) svg.setAttribute(k, String(v));
+    for (const [tag, a] of ICONS[name]) {
+      const shape = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(a)) shape.setAttribute(k, String(v));
+      svg.appendChild(shape);
+    }
+    return svg;
+  }
+
+  function stat(kind, icon, count, singular, plural) {
+    const span = el('span', `stat ${kind}`);
+    span.append(svgIcon(icon, 17.5), document.createTextNode(`${count.toLocaleString()} ${count === 1 ? singular : plural}`));
+    return span;
+  }
+
+  function hideAll() {
+    noticeEl.hidden = true;
+    diffIsland.hidden = true;
+    diffEl.replaceChildren();
+  }
+
+  function showDiff(out) {
+    diffIsland.hidden = false;
+    diffEl.replaceChildren(renderTable(out.rows, out.adds, out.dels, out.leftLines, out.rightLines));
+  }
+
+  function showNotice(kind, title, text) {
+    noticeEl.hidden = false;
+    noticeEl.classList.toggle('error', kind === 'error');
+    noticeIcon.replaceChildren(svgIcon(kind === 'error' ? 'alert' : 'info', 19));
+    noticeTitle.textContent = title;
+    noticeText.textContent = text;
   }
 
   function showResult(visible) {
@@ -244,34 +330,29 @@
     const b = changedEl.value;
 
     showResult(true);
-    diffEl.replaceChildren();
+    hideAll();
 
     if (a.length > MAX_CHARS || b.length > MAX_CHARS) {
-      showSummary([el('span', 'msg', 'Input is too large (limit: 1,000,000 characters per side).')]);
+      showNotice('error', 'Input is too large', 'The limit is 1,000,000 characters per side.');
       return;
     }
     const la = toLines(a);
     const lb = toLines(b);
     if (la.length > MAX_LINES || lb.length > MAX_LINES) {
-      showSummary([el('span', 'msg', `Input has too many lines (limit: ${MAX_LINES.toLocaleString()} per side).`)]);
+      showNotice('error', 'Input has too many lines', `The limit is ${MAX_LINES.toLocaleString()} lines per side.`);
       return;
     }
 
     const out = buildRows(la, lb);
     if (!out) {
-      showSummary([el('span', 'msg', 'The texts differ too much to compare within the time limit.')]);
+      showNotice('error', 'Comparison timed out', 'The texts differ too much to compare within the time limit.');
       return;
     }
 
     if (out.adds === 0 && out.dels === 0) {
-      showSummary([el('span', 'msg', 'No differences found. The texts are identical.')]);
-    } else {
-      showSummary([
-        el('span', 'n-add', `+${out.adds.toLocaleString()} added`),
-        el('span', 'n-del', `\u2212${out.dels.toLocaleString()} removed`),
-      ]);
+      showNotice('info', 'The two texts are identical', 'There is no difference to show between these two texts');
     }
-    diffEl.replaceChildren(renderTable(out.rows));
+    showDiff(out); // always rendered, including when the texts are identical
   }
 
   function onFind() {
@@ -329,8 +410,7 @@
     originalEl.value = '';
     changedEl.value = '';
     updateGutters();
-    summaryEl.replaceChildren();
-    diffEl.replaceChildren();
+    hideAll();
     showResult(false);
     restoreEl.hidden = true;
     clearSession();

@@ -14,6 +14,8 @@
   --del-num: #fbd3d3;
   --dismiss-bg: #e4e8ec;
   --hatch: rgba(0, 0, 0, 0.06);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 18px rgba(16, 24, 40, 0.09);
+  --del-text: #cf222e;
   --focus: #2f6fed;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   color-scheme: light;
@@ -35,6 +37,8 @@
   --del-num: rgba(248, 81, 73, 0.25);
   --dismiss-bg: #101211;
   --hatch: rgba(255, 255, 255, 0.06);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.45);
+  --del-text: #ff7b72;
   --focus: #58a6ff;
   color-scheme: dark;
 }
@@ -60,11 +64,10 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
 }
 
 .topbar h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+.brand { color: var(--btn); }
 
 .btn {
   font: inherit;
@@ -119,26 +122,73 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .result[hidden] { display: none; }
 
-.summary {
-  flex: none;
-  display: flex;
-  gap: 1rem;
-  padding: 0.4rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  font-weight: 600;
+/* Result "islands": rounded, bordered, shadowed cards. overflow: clip (not hidden) rounds
+   the corners without turning the island into a scroll container, so the sticky table
+   header keeps sticking to the viewport. */
+.island {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  overflow: clip;
 }
 
-.summary .n-add { color: #12a594; }
-.summary .n-del { color: #cf222e; }
-[data-theme="dark"] .summary .n-del { color: #ff7b72; }
-.summary .msg { font-weight: 400; }
+.island[hidden] { display: none; }
+
+/* Gap between two visible islands (notice above the diff). */
+.result > .island:not([hidden]) + .island:not([hidden]) { margin-top: 0.75rem; }
+
+.stat { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 13px; }
+.stat.del { color: var(--del-text); }
+.stat.add { color: #12a594; }
+.stat svg { flex: none; width: 17.5px; height: 17.5px; }
+/* Inside of the circles uses the diff's line-highlight colours instead of the field colour. */
+.stat.del svg circle { fill: var(--del-bg); }
+.stat.add svg circle { fill: var(--add-bg); }
+
+/* Identical-texts / error notice: a static island, same colors in both themes. */
+.notice {
+  --notice-bg: #e6f4fe;
+  --notice-title: #113264;
+  --notice-fg: #0d74ce;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: var(--notice-bg);
+  border-color: #cfe6f8;
+}
+
+[data-theme="dark"] .notice {
+  --notice-bg: #0d2847;
+  --notice-title: #c2e6ff;
+  --notice-fg: #70b8ff;
+  border-color: #0d2847;
+}
+
+.notice.error {
+  --notice-bg: #fdecec;
+  --notice-title: #5c1620;
+  --notice-fg: #cf222e;
+  border-color: #f5c9c9;
+}
+
+.notice[hidden] { display: none; }
+
+.notice-icon { flex: none; display: inline-flex; margin-top: 0.05rem; color: var(--notice-fg); }
+.notice-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--notice-title); }
+.notice-text { margin: 0.1rem 0 0; font-size: 13px; color: var(--notice-fg); }
+
+/* Filled icon: solid circle with the glyph cut out in the island's own colour. */
+.glyph { fill: none; stroke: var(--notice-bg); stroke-width: 2.6; stroke-linecap: round; }
+.glyph-dot { fill: var(--notice-bg); stroke: none; }
 
 .diff-scroll { flex: 1; min-height: 0; overflow: auto; }
 
 .diff {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
   font: 13px/1.5 var(--mono);
 }
@@ -147,28 +197,53 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 0.25rem 0.75rem;
+  height: 45px;
+  padding: 0 10px 0 15px;
+  vertical-align: middle;
   text-align: left;
-  font: 600 12px/1.5 system-ui, sans-serif;
-  color: var(--muted);
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  font: 600 13px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
 }
 
-.diff th + th { border-left: 1px solid var(--border); }
+.diff th.gap { padding: 0; }
 
-.diff td { vertical-align: top; padding: 0 0.5rem; }
+/* The line under the header is split: one segment per section (as wide as the highlights),
+   with the gap column and the 8px edge columns left empty. */
+.diff th:not(.gap) { border-bottom: 1px solid var(--border); }
+
+.th-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.th-inner .lines { font-weight: 400; color: var(--muted); white-space: nowrap; }
+
+.diff td { vertical-align: top; padding: 0.2rem 0.5rem; }
+.diff td.gap { padding: 0; }
+
+/* Lines inside a highlighted run are spaced like regular lines; the extra room sits only
+   at the run's top and bottom, i.e. between regular lines and highlighted ones. */
+.diff td.r-top { padding-top: 0.35rem; }
+.diff td.r-bot { padding-bottom: 0.35rem; }
 
 .diff td.num {
+  position: relative;
+  padding-left: 17px; /* 8px edge column + 17px = numbers start 25px from the island edge */
   padding-right: 0.6rem;
   text-align: right;
   color: var(--muted);
   user-select: none;
-  border-right: 1px solid var(--border);
 }
 
+/* Vertical line between numbers and text. It stops 15px short of the header's line. */
+.diff td.num::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.diff tbody tr:first-child td.num::after { top: 15px; }
+
 .diff td.num + td.code { padding-left: 0.6rem; }
-.diff td.code + td.num { border-left: 1px solid var(--border); }
 
 .diff td.code {
   white-space: pre-wrap;
@@ -184,12 +259,18 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   background: repeating-linear-gradient(45deg, transparent 0 6px, var(--hatch) 6px 7px);
 }
 
+/* Rounded highlight blocks: app.js marks the first and last row of each run. */
+.diff td.num.r-top { border-top-left-radius: 6px; }
+.diff td.code.r-top { border-top-right-radius: 6px; }
+.diff td.num.r-bot { border-bottom-left-radius: 6px; }
+.diff td.code.r-bot { border-bottom-right-radius: 6px; }
+
 .seg-add { background: var(--add-strong); border-radius: 3px; }
 .seg-del { background: var(--del-strong); border-radius: 3px; }
 
 .editors {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: max(16rem, 45vh);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
@@ -199,9 +280,14 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* After a diff: the page scrolls normally. The diff takes its natural height and the
    editable fields sit below it, so they are only reached by scrolling down. */
 .has-result #app { flex: 1 0 auto; }
-.has-result .result { flex: none; display: block; }
+.has-result .result { flex: none; display: block; margin: 0.75rem 1rem; }
 .has-result .diff-scroll { overflow: visible; }
-.has-result .editors { flex: none; height: 45vh; min-height: 16rem; border-top: 1px solid var(--border); }
+
+/* After a diff: each editable field is capped at 260px tall and scrolls on its own
+   (textarea + line numbers) when the text is longer. */
+.has-result .editors { flex: none; min-height: 0; grid-template-rows: none; }
+.has-result .field { flex: none; height: 260px; }
+.has-result .actions { margin-top: auto; }
 
 .editor { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 
@@ -222,8 +308,8 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
    sides match). The 1px padding in the resting state is swapped for the extra border pixel,
    so the field's content never moves. The transparent outline only shows in forced-colors mode. */
 .field:focus-within {
-  padding: 0;
-  border-width: 1.5px;
+  padding: 0.75px;
+  border-width: 1.25px;
   border-color: #12a594;
   outline: 1px solid transparent;
 }
@@ -233,7 +319,7 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .gutter {
   flex: none;
   overflow: hidden;
-  padding: 0.6rem 0.75rem 0.6rem 0.25rem;
+  padding: 0.6rem 1px 0.6rem 13px;
   text-align: right;
   white-space: pre;
   color: var(--muted);
@@ -263,7 +349,7 @@ textarea {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  padding: 0.6rem 0.75rem;
+  padding: 0.6rem 0.75rem 0.6rem 8px;
   resize: none;
   color: var(--fg);
   background: transparent;
@@ -278,14 +364,12 @@ textarea {
   flex: none;
   display: flex;
   justify-content: center;
-  padding: 0.6rem 1rem;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
+  /* Bottom space equals the space above the button: editors' 0.75rem bottom padding + 0.6rem. */
+  padding: 0.6rem 1rem calc(0.75rem + 0.6rem);
 }
 
 @media (max-width: 700px) {
-  .editors { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-  .has-result .editors { height: auto; grid-template-rows: 14rem 14rem; }
+  .editors { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; min-height: max(28rem, 45vh); }
   .diff { font-size: 12px; }
   .diff td.num { width: 2.6rem; }
 }

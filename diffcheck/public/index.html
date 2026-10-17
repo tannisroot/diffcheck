@@ -11,7 +11,7 @@
 </head>
 <body>
   <header class="topbar">
-    <h1>Diffcheck</h1>
+    <h1><span class="brand">Diff</span>check</h1>
     <div class="topbar-actions">
       <button id="reset" class="btn icon-btn" type="button" aria-label="Reset" title="Reset">
         <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
@@ -25,8 +25,16 @@
 
   <main id="app">
     <section id="result" class="result" hidden>
-      <div id="summary" class="summary" role="status"></div>
-      <div id="diff" class="diff-scroll"></div>
+      <div id="notice" class="island notice" role="status" hidden>
+        <span id="notice-icon" class="notice-icon"></span>
+        <div>
+          <h2 id="notice-title" class="notice-title"></h2>
+          <p id="notice-text" class="notice-text"></p>
+        </div>
+      </div>
+      <div id="diff-island" class="island" hidden>
+        <div id="diff" class="diff-scroll"></div>
+      </div>
     </section>
 
     <section class="editors">

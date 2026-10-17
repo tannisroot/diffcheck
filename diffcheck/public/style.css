@@ -287,12 +287,12 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .has-result #app { flex: 1 0 auto; }
 .has-result .result { flex: none; display: block; margin: 0.75rem 1rem; }
 .has-result .diff-scroll { overflow: visible; padding-bottom: 8px; }
+.has-result #diff-island { min-height: 580px; }
 
 /* After a diff: each editable field is capped at 260px tall and scrolls on its own
    (textarea + line numbers) when the text is longer. */
 .has-result .editors { flex: none; min-height: 0; grid-template-rows: none; }
 .has-result .field { flex: none; height: 260px; }
-.has-result .actions { margin-top: auto; }
 
 .editor { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 

@@ -13,7 +13,7 @@ Shortcut: Ctrl/Cmd+Enter in either field runs the comparison.
 ## Docker
 
 ``` sh
-docker run -p 127.0.0.1:10300:10300 tannisroot/diffcheck:v1.0
+docker run -p 127.0.0.1:10300:10300 tannisroot/diffcheck:latest
 ```
 
 ## LLM usage notice

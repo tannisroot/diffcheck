@@ -273,10 +273,14 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .seg-add { background: var(--add-strong); border-radius: 3px; }
 .seg-del { background: var(--del-strong); border-radius: 3px; }
 
+/* Paste mode: the editors take exactly the space left in the window (rows are minmax(0, 1fr),
+   so long text or a tall line-number column can't stretch them). Text scrolls inside the
+   fields and the Find Difference button always stays on screen. */
 .editors {
-  flex: 1 0 auto;
-  min-height: max(16rem, 45vh);
+  flex: 1 1 0;
+  min-height: 0;
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
@@ -374,7 +378,7 @@ textarea {
 }
 
 @media (max-width: 700px) {
-  .editors { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; min-height: max(28rem, 45vh); }
+  .editors { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
   .diff { font-size: 12px; }
   .diff td.num { width: 2.6rem; }
 }
